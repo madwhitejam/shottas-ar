@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport"
  content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SHOTTAS AR - V13</title>
+
+<title>SHOTTAS AR - V14</title>
 
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -20,11 +21,11 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #000;
+  background: black;
   font-family: Arial, sans-serif;
 }
 
-/* Dedicated AR container */
+/* MAIN AR CONTAINER */
 #ar-container {
   position: absolute;
   top: 0;
@@ -34,15 +35,19 @@ html, body {
   overflow: hidden;
 }
 
-/* Scene fills its parent */
+/* A-FRAME SCENE */
 #scene {
   width: 100%;
   height: 100%;
 }
 
-/* Do not override MindAR camera video */
+/* CAMERA ALIGNMENT - VERSION 14 */
+/* Camera moves 15% LEFT and 15% DOWN */
+#ar-container video:not(#arVideo) {
+  translate: -15% 15%;
+}
 
-/* Diagnostic message */
+/* STATUS DISPLAY */
 #status {
   position: fixed;
   top: 12px;
@@ -58,7 +63,7 @@ html, body {
   pointer-events: none;
 }
 
-/* Sound control */
+/* SOUND BUTTON */
 #sound {
   position: fixed;
   bottom: 25px;
@@ -125,7 +130,7 @@ html, body {
 </div>
 
 <div id="status">
-  SHOTTAS AR V13 - Initializing...
+  SHOTTAS AR V14 - Initializing...
 </div>
 
 <button id="sound" type="button">
@@ -145,67 +150,77 @@ let soundEnabled = false;
 
 function show(message) {
   statusBox.textContent = message;
-  console.log("[SHOTTAS V13]", message);
+  console.log("[SHOTTAS V14]", message);
 }
 
+/* CAMERA ALIGNMENT */
+function alignCamera() {
+  const cameraVideos = [
+    ...document.querySelectorAll("video")
+  ].filter(v => v.id !== "arVideo");
+
+  cameraVideos.forEach(v => {
+    if (!container.contains(v)) {
+      console.log("Camera outside AR container:", v);
+    }
+
+    v.style.translate = "-15% 15%";
+  });
+}
+
+/* DIAGNOSTICS */
 function diagnostics() {
-  const rect = container.getBoundingClientRect();
   const canvas = scene.querySelector("canvas");
-  const canvasRect = canvas
-    ? canvas.getBoundingClientRect()
-    : null;
 
-  const cameraVideos = [...document.querySelectorAll("video")]
-    .filter(v => v.id !== "arVideo");
+  const cameras = [
+    ...document.querySelectorAll("video")
+  ].filter(v => v.id !== "arVideo");
 
-  const cameraInfo = cameraVideos.map(v => {
+  const cameraInfo = cameras.map(v => {
     const r = v.getBoundingClientRect();
-    const s = getComputedStyle(v);
-    return "Camera layer: " +
+
+    return (
+      "Camera: " +
       Math.round(r.x) + "," +
       Math.round(r.y) + " " +
       Math.round(r.width) + "x" +
-      Math.round(r.height) +
-      " display=" + s.display +
-      " z=" + s.zIndex;
+      Math.round(r.height)
+    );
   }).join(" | ");
 
   return (
-    "Viewport: " +
+    "Screen: " +
     window.innerWidth + "x" + window.innerHeight +
-    " | Container: " +
-    Math.round(rect.width) + "x" +
-    Math.round(rect.height) +
     " | Canvas: " +
-    (canvasRect
-      ? Math.round(canvasRect.x) + "," +
-        Math.round(canvasRect.y) + " " +
-        Math.round(canvasRect.width) + "x" +
-        Math.round(canvasRect.height)
+    (canvas
+      ? canvas.clientWidth + "x" + canvas.clientHeight
       : "not ready") +
-    " | " + (cameraInfo || "Camera layer not found")
+    " | " +
+    (cameraInfo || "Camera not found")
   );
 }
 
+/* SCENE EVENTS */
 scene.addEventListener("loaded", () => {
   show("Scene loaded. Starting camera...");
 });
 
 scene.addEventListener("arReady", () => {
-  show("Camera ready. Point at SHOTTAS artwork.");
+  alignCamera();
 
-  setTimeout(() => {
-    if (!tracking) {
-      show(diagnostics());
-    }
-  }, 2500);
+  show(
+    "Camera ready. " + diagnostics()
+  );
 });
 
 scene.addEventListener("arError", event => {
-  show("AR error: " +
-    JSON.stringify(event.detail || {}));
+  show(
+    "AR error: " +
+    JSON.stringify(event.detail || {})
+  );
 });
 
+/* ARTWORK TRACKING */
 target.addEventListener("targetFound", async () => {
   tracking = true;
   show("SHOTTAS artwork recognized!");
@@ -225,9 +240,11 @@ target.addEventListener("targetLost", () => {
   tracking = false;
   video.pause();
   video.currentTime = 0;
-  show("Artwork lost. Point camera at SHOTTAS.");
+
+  show("Artwork lost. Scan SHOTTAS again.");
 });
 
+/* SOUND BUTTON */
 sound.addEventListener("click", async () => {
   soundEnabled = true;
   video.muted = false;
@@ -247,6 +264,12 @@ sound.addEventListener("click", async () => {
   }
 });
 
+/* RESIZE */
+window.addEventListener("resize", () => {
+  alignCamera();
+});
+
+/* ERROR REPORTING */
 window.addEventListener("error", event => {
   show("Page error: " + event.message);
 });
@@ -258,4 +281,5 @@ window.addEventListener("unhandledrejection", event => {
 
 </body>
 </html>
+
 
