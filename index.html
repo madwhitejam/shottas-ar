@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
         content="width=device-width, initial-scale=1">
-
-  <title>SHOTTAS AR - V17</title>
+  <title>SHOTTAS AR | V18</title>
 
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -42,6 +41,17 @@
       color: #111111;
       cursor: pointer;
     }
+
+    #version {
+      position: fixed;
+      top: 45px;
+      width: 100%;
+      text-align: center;
+      color: #f5cb48;
+      font-size: 12px;
+      z-index: 20;
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -49,6 +59,10 @@
 
   <div id="message">
     Point your camera at the SHOTTAS artwork
+  </div>
+
+  <div id="version">
+    SHOTTAS V18 - PAUL CAMERA BASE
   </div>
 
   <button id="soundButton">
@@ -92,13 +106,10 @@
 
   <script>
     const video = document.querySelector("#artVideo");
-
     const target = document.querySelector(
       "[mindar-image-target]"
     );
-
     const message = document.querySelector("#message");
-
     const soundButton = document.querySelector("#soundButton");
 
     let soundEnabled = false;
@@ -109,7 +120,6 @@
         video.muted = false;
         video.volume = 1;
 
-        // Unlock audible playback from user gesture.
         await video.play();
 
         soundEnabled = true;
@@ -119,7 +129,6 @@
           video.pause();
           video.currentTime = 0;
         }
-
       } catch (error) {
         message.textContent =
           "Sound could not start. Tap again.";
@@ -129,9 +138,7 @@
 
     target.addEventListener("targetFound", () => {
       artworkVisible = true;
-
-      message.textContent =
-        "SHOTTAS artwork recognized!";
+      message.textContent = "SHOTTAS artwork recognized!";
 
       video.currentTime = 0;
 
@@ -144,9 +151,7 @@
 
     target.addEventListener("targetLost", () => {
       artworkVisible = false;
-
       video.pause();
-
       message.textContent =
         "Point your camera at the SHOTTAS artwork";
     });
@@ -154,4 +159,3 @@
 
 </body>
 </html>
-
