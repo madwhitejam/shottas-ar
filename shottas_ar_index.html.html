@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>SHOTTAS AR</title>
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111;font-family:Arial,sans-serif}
+#status{position:fixed;top:12px;left:12px;right:12px;z-index:100;background:rgba(0,0,0,.78);color:#fff;border-radius:9px;padding:12px;font-size:14px;pointer-events:none}
+#sound{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:101;border:0;border-radius:10px;background:#f5cb48;color:#111;padding:13px 18px;font-weight:bold}
+</style>
+</head>
+<body>
+<div id="status">Loading AR libraries…</div>
+<button id="sound" type="button">Enable sound</button>
+<a-scene id="scene" mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiLoading: yes; uiScanning: yes; uiError: yes;" color-space="sRGB" renderer="colorManagement: true;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
+<a-assets timeout="20000"><video id="arVideo" src="./shottas.mp4" preload="metadata" playsinline webkit-playsinline muted loop crossorigin="anonymous"></video></a-assets>
+<a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+<a-entity id="target" mindar-image-target="targetIndex: 0"><a-video src="#arVideo" position="0 0 0" width="1" height="0.5625"></a-video></a-entity>
+</a-scene>
+<script>
+const status=document.getElementById('status');
+const scene=document.getElementById('scene');
+const target=document.getElementById('target');
+const video=document.getElementById('arVideo');
+const sound=document.getElementById('sound');
+let soundEnabled=false;
+const show=(message)=>{status.textContent=message;};
+show('Starting camera and image tracking… Allow camera access when asked.');
+scene.addEventListener('renderstart',()=>show('AR scene rendered. Waiting for camera/tracker…'));
+scene.addEventListener('arReady',()=>show('Camera ready. Point at the SHOTTAS artwork.'));
+scene.addEventListener('arError',(event)=>show('AR error: '+(event.detail?.error||'Check camera permission, network, and tracking file.')));
+scene.addEventListener('loaded',()=>show('Scene loaded. Starting camera…'));
+target.addEventListener('targetFound',async()=>{
+ show('Artwork recognized! Starting animation…');
+ video.muted=!soundEnabled;
+ try{video.currentTime=0;await video.play();show('Artwork recognized — animation playing.');}
+ catch(e){show('Artwork recognized, but playback blocked: '+e.message+' Tap Enable sound.');}
+});
+target.addEventListener('targetLost',()=>{video.pause();show('Artwork lost. Point the camera at the printed image.');});
+sound.addEventListener('click',async()=>{
+ soundEnabled=true;
+ video.muted=false;
+ try{
+  await video.play();
+  if(!target.object3D.visible){video.pause();video.currentTime=0;}
+  sound.textContent='Sound enabled ✓';
+  show('Sound enabled. Point camera at artwork.');
+ }catch(e){show('Sound unlock failed: '+e.message);}
+});
+window.addEventListener('error',e=>show('Page error: '+e.message));
+window.addEventListener('unhandledrejection',e=>show('Startup error: '+String(e.reason)));
+</script>
+</body>
+</html>
