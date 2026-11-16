@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SHOTTAS AR</title>
+<meta name="viewport"
+ content="width=device-width,initial-scale=1,viewport-fit=cover">
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
+<title>SHOTTAS AR - V16</title>
+
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
 <style>
 * {
@@ -15,195 +17,262 @@
 
 html, body {
   margin: 0;
+  padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: black;
+  background: #000;
   font-family: Arial, sans-serif;
 }
 
+/* MAIN AR CONTAINER */
 #ar-container {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   background: transparent;
 }
 
-#ar-container video {
-  object-fit: cover;
+/* A-FRAME SCENE */
+#scene {
+  width: 100%;
+  height: 100%;
 }
 
+/* STATUS DISPLAY */
 #status {
   position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 12px;
+  left: 12px;
+  right: 12px;
   z-index: 9999;
-  padding: 12px 18px;
-  background: rgba(0,0,0,.75);
+  background: rgba(0,0,0,0.8);
   color: white;
-  border-radius: 12px;
-  font-size: 14px;
-  text-align: center;
-  max-width: 90%;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
   pointer-events: none;
 }
 
-#start {
+/* SOUND BUTTON */
+#sound {
   position: fixed;
-  bottom: 40px;
+  bottom: 25px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
-  padding: 16px 35px;
-  border: 0;
-  border-radius: 30px;
-  background: #e2b650;
-  color: black;
-  font-size: 18px;
+  background: #f5cb48;
+  color: #111;
+  border: none;
+  border-radius: 9px;
+  padding: 14px 20px;
   font-weight: bold;
+  white-space: nowrap;
 }
-
-#animation {
-  display: none;
-}
-
 </style>
 </head>
 
 <body>
 
-<div id="ar-container"></div>
-<div id="status">SHOTTAS AR ready</div>
-<button id="start">START CAMERA</button>
+<div id="ar-container">
 
-<video
-  id="animation"
-  src="./animation.mp4"
-  preload="auto"
-  playsinline
-  webkit-playsinline
-  muted
-  loop>
-</video>
+<a-scene
+  id="scene"
+  mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiLoading: yes; uiScanning: yes; uiError: yes;"
+  embedded
+  color-space="sRGB"
+  renderer="colorManagement: true; alpha: true;"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false">
+
+  <a-assets timeout="30000">
+    <video
+      id="arVideo"
+      src="./shottas.mp4"
+      preload="metadata"
+      crossorigin="anonymous"
+      playsinline
+      webkit-playsinline
+      muted
+      loop>
+    </video>
+  </a-assets>
+
+  <a-camera
+    position="0 0 0"
+    look-controls="enabled: false">
+  </a-camera>
+
+  <a-entity
+    id="target"
+    mindar-image-target="targetIndex: 0">
+
+    <a-video
+      src="#arVideo"
+      position="0 0 0.01"
+      width="1"
+      height="0.5625">
+    </a-video>
+
+  </a-entity>
+
+</a-scene>
+
+</div>
+
+<div id="status">
+  SHOTTAS V16 - Initializing...
+</div>
+
+<button id="sound" type="button">
+  Enable Sound
+</button>
 
 <script>
+const scene = document.getElementById("scene");
+const target = document.getElementById("target");
+const video = document.getElementById("arVideo");
+const sound = document.getElementById("sound");
 const statusBox = document.getElementById("status");
-const startButton = document.getElementById("start");
-const video = document.getElementById("animation");
-const container = document.getElementById("ar-container");
 
-function status(message) {
+let tracking = false;
+let soundEnabled = false;
+
+/* STATUS */
+function show(message) {
   statusBox.textContent = message;
+  console.log("[SHOTTAS V16]", message);
 }
 
-let started = false;
+/* CAMERA ALIGNMENT */
+function alignCamera() {
+  const camera = [...document.querySelectorAll("video")]
+    .find(v => v.id !== "arVideo");
 
-startButton.addEventListener("click", async () => {
-  if (started) return;
+  if (!camera) {
+    show("Camera element not found.");
+    return;
+  }
 
-  started = true;
-  startButton.style.display = "none";
+  camera.style.setProperty("position", "fixed", "important");
+  camera.style.setProperty("left", "0px", "important");
+  camera.style.setProperty("top", "0px", "important");
+  camera.style.setProperty("width", "100vw", "important");
+  camera.style.setProperty("height", "100vh", "important");
+  camera.style.setProperty("object-fit", "cover", "important");
+  camera.style.setProperty("transform", "none", "important");
+  camera.style.setProperty("translate", "none", "important");
+  camera.style.setProperty("margin", "0", "important");
+  camera.style.setProperty("z-index", "0", "important");
+
+  const canvas = scene.querySelector("canvas");
+
+  if (canvas) {
+    canvas.style.setProperty("position", "absolute", "important");
+    canvas.style.setProperty("left", "0px", "important");
+    canvas.style.setProperty("top", "0px", "important");
+    canvas.style.setProperty("z-index", "1", "important");
+    canvas.style.setProperty("background", "transparent", "important");
+  }
+
+  show("Camera aligned. " + diagnostics());
+}
+
+/* DIAGNOSTICS */
+function diagnostics() {
+  const camera = [...document.querySelectorAll("video")]
+    .find(v => v.id !== "arVideo");
+
+  if (!camera) {
+    return "Camera element unavailable.";
+  }
+
+  const r = camera.getBoundingClientRect();
+
+  return (
+    "Screen: " +
+    window.innerWidth + "x" + window.innerHeight +
+    " | Camera: " +
+    Math.round(r.x) + "," +
+    Math.round(r.y) + " " +
+    Math.round(r.width) + "x" +
+    Math.round(r.height)
+  );
+}
+
+/* SCENE EVENTS */
+scene.addEventListener("loaded", () => {
+  show("Scene loaded. Starting camera...");
+});
+
+scene.addEventListener("arReady", () => {
+  show("Camera ready. Aligning display...");
+
+  setTimeout(alignCamera, 500);
+});
+
+scene.addEventListener("arError", event => {
+  show(
+    "AR error: " +
+    JSON.stringify(event.detail || {})
+  );
+});
+
+/* ARTWORK TRACKING */
+target.addEventListener("targetFound", async () => {
+  tracking = true;
+  show("SHOTTAS artwork recognized!");
+
+  video.muted = !soundEnabled;
 
   try {
-    status("Loading SHOTTAS AR...");
-
-    const mindarThree = new window.MINDAR.IMAGE.MindARThree({
-      container: container,
-      imageTargetSrc: "./targets.mind",
-      maxTrack: 1,
-      filterMinCF: 0.0001,
-      filterBeta: 0.001
-    });
-
-    const {
-      renderer,
-      scene,
-      camera
-    } = mindarThree;
-
-    renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, 2)
-    );
-
-    const anchor = mindarThree.addAnchor(0);
-
-    const geometry = new THREE.PlaneGeometry(1, 1);
-
-    const texture = new THREE.VideoTexture(video);
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    texture.format = THREE.RGBAFormat;
-
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-
-    const plane = new THREE.Mesh(geometry, material);
-
-    // Position relative to the tracked printed artwork.
-    plane.position.set(-0.08, -0.12, 0.02);
-
-    // Match the animation's aspect ratio.
-    function updateAspect() {
-      if (video.videoWidth && video.videoHeight) {
-        plane.scale.set(
-          video.videoWidth / video.videoHeight,
-          1,
-          1
-        );
-      }
-    }
-
-    video.addEventListener("loadedmetadata", updateAspect);
-
-    anchor.group.add(plane);
-    plane.visible = false;
-
-    anchor.onTargetFound = async () => {
-      status("SHOTTAS detected!");
-      plane.visible = true;
-
-      try {
-        video.currentTime = 0;
-        await video.play();
-      } catch (error) {
-        status("Tap screen to play animation");
-      }
-    };
-
-    anchor.onTargetLost = () => {
-      plane.visible = false;
-      video.pause();
-      status("Point camera at SHOTTAS artwork");
-    };
-
-    status("Starting camera...");
-    await mindarThree.start();
-
-    // Ensure renderer is transparent.
-    renderer.setClearColor(0x000000, 0);
-
-    status("Camera active - scan SHOTTAS artwork");
-
-    renderer.setAnimationLoop(() => {
-      renderer.render(scene, camera);
-    });
-
+    video.currentTime = 0;
+    await video.play();
+    show("SHOTTAS animation playing!");
   } catch (error) {
-    console.error(error);
-    status("ERROR: " + error.message);
-    startButton.style.display = "block";
-    startButton.textContent = "RETRY CAMERA";
-    started = false;
+    show("Playback error: " + error.message);
   }
 });
 
+target.addEventListener("targetLost", () => {
+  tracking = false;
+  video.pause();
+  video.currentTime = 0;
+  show("Artwork lost. Scan again.");
+});
+
+/* SOUND CONTROL */
+sound.addEventListener("click", async () => {
+  soundEnabled = true;
+  video.muted = false;
+
+  try {
+    await video.play();
+
+    if (!tracking) {
+      video.pause();
+      video.currentTime = 0;
+    }
+
+    sound.textContent = "Sound Enabled ✓";
+    show("Sound enabled. Scan SHOTTAS artwork.");
+  } catch (error) {
+    show("Sound error: " + error.message);
+  }
+});
+
+/* ERROR REPORTING */
+window.addEventListener("error", event => {
+  show("Page error: " + event.message);
+});
+
+window.addEventListener("unhandledrejection", event => {
+  show("Startup error: " + String(event.reason));
+});
 </script>
 
 </body>
