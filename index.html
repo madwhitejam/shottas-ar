@@ -1,10 +1,12 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
         content="width=device-width, initial-scale=1">
-  <title>SHOTTAS AR | V18</title>
+
+  <title>SHOTTAS AR - V19</title>
 
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -62,7 +64,7 @@
   </div>
 
   <div id="version">
-    SHOTTAS V18 - PAUL CAMERA BASE
+    SHOTTAS V19
   </div>
 
   <button id="soundButton">
@@ -94,22 +96,28 @@
     </a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
+
+      <!-- Correct video aspect ratio: 1080 x 2316 -->
       <a-video
         src="#artVideo"
         position="0 0 0"
         width="1"
-        height="1.7778">
+        height="2.1444">
       </a-video>
+
     </a-entity>
 
   </a-scene>
 
   <script>
     const video = document.querySelector("#artVideo");
+
     const target = document.querySelector(
       "[mindar-image-target]"
     );
+
     const message = document.querySelector("#message");
+
     const soundButton = document.querySelector("#soundButton");
 
     let soundEnabled = false;
@@ -120,6 +128,7 @@
         video.muted = false;
         video.volume = 1;
 
+        // Unlock audible playback from user gesture.
         await video.play();
 
         soundEnabled = true;
@@ -129,6 +138,7 @@
           video.pause();
           video.currentTime = 0;
         }
+
       } catch (error) {
         message.textContent =
           "Sound could not start. Tap again.";
@@ -138,7 +148,9 @@
 
     target.addEventListener("targetFound", () => {
       artworkVisible = true;
-      message.textContent = "SHOTTAS artwork recognized!";
+
+      message.textContent =
+        "SHOTTAS artwork recognized!";
 
       video.currentTime = 0;
 
@@ -151,7 +163,9 @@
 
     target.addEventListener("targetLost", () => {
       artworkVisible = false;
+
       video.pause();
+
       message.textContent =
         "Point your camera at the SHOTTAS artwork";
     });
