@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,16 +21,9 @@ html, body {
   background: black;
 }
 
-/* CAMERA POSITION FIX */
-body > video:not(#arVideo) {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100dvh !important;
-  object-fit: cover !important;
-  margin: 0 !important;
-  transform: none !important;
+/* CAMERA STACKING TEST */
+video:not(#arVideo) {
+  z-index: -1;
 }
 
 /* STATUS MESSAGE */
@@ -131,7 +125,7 @@ function show(message) {
   console.log("[SHOTTAS AR]", message);
 }
 
-/* CAMERA AND SCENE STATUS */
+/* SCENE STATUS */
 
 scene.addEventListener("loaded", () => {
   show("Scene loaded. Starting camera...");
@@ -148,11 +142,10 @@ scene.addEventListener("arError", (event) => {
   );
 });
 
-/* ARTWORK RECOGNITION */
+/* ARTWORK TRACKING */
 
 target.addEventListener("targetFound", async () => {
   tracking = true;
-
   show("SHOTTAS artwork recognized!");
 
   video.muted = !soundEnabled;
@@ -160,7 +153,6 @@ target.addEventListener("targetFound", async () => {
   try {
     video.currentTime = 0;
     await video.play();
-
     show("SHOTTAS animation playing!");
   } catch (error) {
     show("Playback error: " + error.message);
@@ -169,14 +161,12 @@ target.addEventListener("targetFound", async () => {
 
 target.addEventListener("targetLost", () => {
   tracking = false;
-
   video.pause();
   video.currentTime = 0;
-
   show("Artwork lost. Scan again.");
 });
 
-/* ENABLE SOUND */
+/* SOUND CONTROL */
 
 sound.addEventListener("click", async () => {
   soundEnabled = true;
@@ -191,7 +181,6 @@ sound.addEventListener("click", async () => {
     }
 
     sound.textContent = "Sound Enabled ✓";
-
     show("Sound enabled. Scan SHOTTAS artwork.");
   } catch (error) {
     show("Sound error: " + error.message);
