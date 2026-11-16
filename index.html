@@ -1,260 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport"
- content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SHOTTAS AR - V13</title>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
 
-<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <title>SHOTTAS AR - V17</title>
 
-<style>
-* {
-  box-sizing: border-box;
-}
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #000;
-  font-family: Arial, sans-serif;
-}
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      font-family: Arial, sans-serif;
+    }
 
-/* Dedicated AR container */
-#ar-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
+    #message {
+      position: fixed;
+      top: 15px;
+      width: 100%;
+      text-align: center;
+      color: white;
+      z-index: 10;
+      pointer-events: none;
+      text-shadow: 0 1px 5px black;
+    }
 
-/* Scene fills its parent */
-#scene {
-  width: 100%;
-  height: 100%;
-}
-
-/* Do not override MindAR camera video */
-
-/* Diagnostic message */
-#status {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  z-index: 9999;
-  background: rgba(0,0,0,0.75);
-  color: white;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.4;
-  pointer-events: none;
-}
-
-/* Sound control */
-#sound {
-  position: fixed;
-  bottom: 25px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  background: #f5cb48;
-  color: #111;
-  border: none;
-  border-radius: 9px;
-  padding: 14px 20px;
-  font-weight: bold;
-  white-space: nowrap;
-}
-</style>
+    #soundButton {
+      position: fixed;
+      bottom: 35px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      padding: 15px 25px;
+      font-size: 17px;
+      border: none;
+      border-radius: 30px;
+      background: #ffffff;
+      color: #111111;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
 
-<div id="ar-container">
+  <div id="message">
+    Point your camera at the SHOTTAS artwork
+  </div>
 
-<a-scene
-  id="scene"
-  mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiLoading: yes; uiScanning: yes; uiError: yes;"
-  embedded
-  color-space="sRGB"
-  renderer="colorManagement: true; alpha: true;"
-  vr-mode-ui="enabled: false"
-  device-orientation-permission-ui="enabled: false">
+  <button id="soundButton">
+    Tap to Enable Sound
+  </button>
 
-  <a-assets timeout="30000">
-    <video
-      id="arVideo"
-      src="./shottas.mp4"
-      preload="metadata"
-      crossorigin="anonymous"
-      playsinline
-      webkit-playsinline
-      muted
-      loop>
-    </video>
-  </a-assets>
+  <a-scene
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true;"
+    color-space="sRGB"
+    renderer="colorManagement: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
 
-  <a-camera
-    position="0 0 0"
-    look-controls="enabled: false">
-  </a-camera>
+    <a-assets>
+      <video
+        id="artVideo"
+        src="./shottas.mp4"
+        preload="auto"
+        loop
+        muted
+        playsinline
+        webkit-playsinline>
+      </video>
+    </a-assets>
 
-  <a-entity
-    id="target"
-    mindar-image-target="targetIndex: 0">
+    <a-camera
+      position="0 0 0"
+      look-controls="enabled: false">
+    </a-camera>
 
-    <a-video
-      src="#arVideo"
-      position="0 0 0.01"
-      width="1"
-      height="0.5625">
-    </a-video>
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-video
+        src="#artVideo"
+        position="0 0 0"
+        width="1"
+        height="1.7778">
+      </a-video>
+    </a-entity>
 
-  </a-entity>
+  </a-scene>
 
-</a-scene>
+  <script>
+    const video = document.querySelector("#artVideo");
 
-</div>
+    const target = document.querySelector(
+      "[mindar-image-target]"
+    );
 
-<div id="status">
-  SHOTTAS AR V13 - Initializing...
-</div>
+    const message = document.querySelector("#message");
 
-<button id="sound" type="button">
-  Enable Sound
-</button>
+    const soundButton = document.querySelector("#soundButton");
 
-<script>
-const scene = document.getElementById("scene");
-const target = document.getElementById("target");
-const video = document.getElementById("arVideo");
-const sound = document.getElementById("sound");
-const statusBox = document.getElementById("status");
-const container = document.getElementById("ar-container");
+    let soundEnabled = false;
+    let artworkVisible = false;
 
-let tracking = false;
-let soundEnabled = false;
+    soundButton.addEventListener("click", async () => {
+      try {
+        video.muted = false;
+        video.volume = 1;
 
-function show(message) {
-  statusBox.textContent = message;
-  console.log("[SHOTTAS V13]", message);
-}
+        // Unlock audible playback from user gesture.
+        await video.play();
 
-function diagnostics() {
-  const rect = container.getBoundingClientRect();
-  const canvas = scene.querySelector("canvas");
-  const canvasRect = canvas
-    ? canvas.getBoundingClientRect()
-    : null;
+        soundEnabled = true;
+        soundButton.style.display = "none";
 
-  const cameraVideos = [...document.querySelectorAll("video")]
-    .filter(v => v.id !== "arVideo");
+        if (!artworkVisible) {
+          video.pause();
+          video.currentTime = 0;
+        }
 
-  const cameraInfo = cameraVideos.map(v => {
-    const r = v.getBoundingClientRect();
-    const s = getComputedStyle(v);
-    return "Camera layer: " +
-      Math.round(r.x) + "," +
-      Math.round(r.y) + " " +
-      Math.round(r.width) + "x" +
-      Math.round(r.height) +
-      " display=" + s.display +
-      " z=" + s.zIndex;
-  }).join(" | ");
+      } catch (error) {
+        message.textContent =
+          "Sound could not start. Tap again.";
+        console.warn(error);
+      }
+    });
 
-  return (
-    "Viewport: " +
-    window.innerWidth + "x" + window.innerHeight +
-    " | Container: " +
-    Math.round(rect.width) + "x" +
-    Math.round(rect.height) +
-    " | Canvas: " +
-    (canvasRect
-      ? Math.round(canvasRect.x) + "," +
-        Math.round(canvasRect.y) + " " +
-        Math.round(canvasRect.width) + "x" +
-        Math.round(canvasRect.height)
-      : "not ready") +
-    " | " + (cameraInfo || "Camera layer not found")
-  );
-}
+    target.addEventListener("targetFound", () => {
+      artworkVisible = true;
 
-scene.addEventListener("loaded", () => {
-  show("Scene loaded. Starting camera...");
-});
+      message.textContent =
+        "SHOTTAS artwork recognized!";
 
-scene.addEventListener("arReady", () => {
-  show("Camera ready. Point at SHOTTAS artwork.");
-
-  setTimeout(() => {
-    if (!tracking) {
-      show(diagnostics());
-    }
-  }, 2500);
-});
-
-scene.addEventListener("arError", event => {
-  show("AR error: " +
-    JSON.stringify(event.detail || {}));
-});
-
-target.addEventListener("targetFound", async () => {
-  tracking = true;
-  show("SHOTTAS artwork recognized!");
-
-  video.muted = !soundEnabled;
-
-  try {
-    video.currentTime = 0;
-    await video.play();
-    show("SHOTTAS animation playing!");
-  } catch (error) {
-    show("Playback error: " + error.message);
-  }
-});
-
-target.addEventListener("targetLost", () => {
-  tracking = false;
-  video.pause();
-  video.currentTime = 0;
-  show("Artwork lost. Point camera at SHOTTAS.");
-});
-
-sound.addEventListener("click", async () => {
-  soundEnabled = true;
-  video.muted = false;
-
-  try {
-    await video.play();
-
-    if (!tracking) {
-      video.pause();
       video.currentTime = 0;
-    }
 
-    sound.textContent = "Sound Enabled ✓";
-    show("Sound enabled. Scan SHOTTAS artwork.");
-  } catch (error) {
-    show("Sound error: " + error.message);
-  }
-});
+      if (!soundEnabled) {
+        video.muted = true;
+      }
 
-window.addEventListener("error", event => {
-  show("Page error: " + event.message);
-});
+      video.play().catch(console.warn);
+    });
 
-window.addEventListener("unhandledrejection", event => {
-  show("Startup error: " + String(event.reason));
-});
-</script>
+    target.addEventListener("targetLost", () => {
+      artworkVisible = false;
+
+      video.pause();
+
+      message.textContent =
+        "Point your camera at the SHOTTAS artwork";
+    });
+  </script>
 
 </body>
 </html>
+
