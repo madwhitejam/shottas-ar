@@ -2,10 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1">
-
-  <title>SHOTTAS AR - V20</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SHOTTAS AR - V21</title>
 
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -54,6 +52,92 @@
       pointer-events: none;
     }
   </style>
+
+  <script>
+    // Adjusts only the artwork video texture.
+    // Does not modify the camera or tracker.
+
+    AFRAME.registerComponent('video-cover', {
+      schema: {
+        video: {type: 'selector'},
+        frameAspect: {default: 1.654}
+      },
+
+      init: function () {
+        const el = this.el;
+        const video = this.data.video;
+        const aspect = this.data.frameAspect;
+
+        const texture = new THREE.VideoTexture(video);
+
+        texture.colorSpace =
+          THREE.SRGBColorSpace || texture.colorSpace;
+
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide
+        });
+
+        const geometry = new THREE.PlaneGeometry(
+          1,
+          1 / aspect
+        );
+
+        const mesh = new THREE.Mesh(geometry, material);
+        el.setObject3D('mesh', mesh);
+
+        function updateCrop() {
+          const videoAspect =
+            (video.videoWidth && video.videoHeight)
+              ? video.videoWidth / video.videoHeight
+              : 1080 / 2316;
+
+          // Fill the frame without stretching.
+          // Crop excess video around the center.
+
+          let repeatX = 1;
+          let repeatY = 1;
+
+          if (videoAspect > aspect) {
+            repeatX = aspect / videoAspect;
+          } else {
+            repeatY = videoAspect / aspect;
+          }
+
+          texture.repeat.set(repeatX, repeatY);
+
+          texture.offset.set(
+            (1 - repeatX) / 2,
+            (1 - repeatY) / 2
+          );
+
+          texture.needsUpdate = true;
+        }
+
+        video.addEventListener(
+          'loadedmetadata',
+          updateCrop
+        );
+
+        updateCrop();
+
+        this.remove = function () {
+          video.removeEventListener(
+            'loadedmetadata',
+            updateCrop
+          );
+
+          el.removeObject3D('mesh');
+          geometry.dispose();
+          material.dispose();
+          texture.dispose();
+        };
+      }
+    });
+  </script>
 </head>
 
 <body>
@@ -63,12 +147,14 @@
   </div>
 
   <div id="version">
-    SHOTTAS V20
+    SHOTTAS V21 - EDGE TO EDGE
   </div>
 
   <button id="soundButton">
     Tap to Enable Sound
   </button>
+
+  <!-- Working Paul Campbell camera setup unchanged -->
 
   <a-scene
     mindar-image="imageTargetSrc: ./targets.mind; autoStart: true;"
@@ -96,61 +182,61 @@
 
     <a-entity mindar-image-target="targetIndex: 0">
 
-      <!-- Video aspect ratio 1080 x 2316 -->
-      <!-- Enlarged 30% from Version 19 -->
-      <a-video
-        src="#artVideo"
-        position="0 0 0"
-        width="1.30"
-        height="2.7877">
-      </a-video>
+      <!-- Estimated artwork frame: 923 x 558 -->
+      <!-- Video is cropped to fill the frame -->
+
+      <a-entity
+        video-cover="video: #artVideo; frameAspect: 1.654"
+        position="0 0 0.01">
+      </a-entity>
 
     </a-entity>
 
   </a-scene>
 
   <script>
-    const video = document.querySelector("#artVideo");
+    const video = document.querySelector('#artVideo');
 
     const target = document.querySelector(
-      "[mindar-image-target]"
+      '[mindar-image-target]'
     );
 
-    const message = document.querySelector("#message");
+    const message = document.querySelector('#message');
 
-    const soundButton = document.querySelector("#soundButton");
+    const soundButton = document.querySelector(
+      '#soundButton'
+    );
 
     let soundEnabled = false;
     let artworkVisible = false;
 
-    soundButton.addEventListener("click", async () => {
+    soundButton.addEventListener('click', async () => {
       try {
         video.muted = false;
         video.volume = 1;
 
-        // Unlock audible playback from user gesture.
         await video.play();
 
         soundEnabled = true;
-        soundButton.style.display = "none";
+        soundButton.style.display = 'none';
 
         if (!artworkVisible) {
           video.pause();
           video.currentTime = 0;
         }
-
       } catch (error) {
         message.textContent =
-          "Sound could not start. Tap again.";
+          'Sound could not start. Tap again.';
+
         console.warn(error);
       }
     });
 
-    target.addEventListener("targetFound", () => {
+    target.addEventListener('targetFound', () => {
       artworkVisible = true;
 
       message.textContent =
-        "SHOTTAS artwork recognized!";
+        'SHOTTAS artwork recognized!';
 
       video.currentTime = 0;
 
@@ -161,16 +247,15 @@
       video.play().catch(console.warn);
     });
 
-    target.addEventListener("targetLost", () => {
+    target.addEventListener('targetLost', () => {
       artworkVisible = false;
 
       video.pause();
 
       message.textContent =
-        "Point your camera at the SHOTTAS artwork";
+        'Point your camera at the SHOTTAS artwork';
     });
   </script>
 
 </body>
 </html>
-
